@@ -28,6 +28,39 @@ NSString *const kXMLReaderAttributePrefix	= @"@";
 
 #pragma mark - Public methods
 
++ (NSDictionary *)dictionaryForNSXMLParser:(NSXMLParser *)xmlParser error:(NSError **)error
+{
+    XMLReader *reader = [[XMLReader alloc] initWithError:error];
+    NSDictionary *rootDictionary = [reader objectWithNSXMLParser:xmlParser options:0];
+    return rootDictionary;
+}
+
+- (NSDictionary *)objectWithNSXMLParser:(NSXMLParser *)xmlParser options:(XMLReaderOptions)options
+{
+    // Clear out any old data
+    self->dictionaryStack = [[NSMutableArray alloc] init];
+    self->textInProgress = [[NSMutableString alloc] init];
+    
+    // Initialize the stack with a fresh dictionary
+    [self->dictionaryStack addObject:[NSMutableDictionary dictionary]];
+    
+    [xmlParser setShouldProcessNamespaces:(options & XMLReaderOptionsProcessNamespaces)];
+    [xmlParser setShouldReportNamespacePrefixes:(options & XMLReaderOptionsReportNamespacePrefixes)];
+    [xmlParser setShouldResolveExternalEntities:(options & XMLReaderOptionsResolveExternalEntities)];
+    
+    xmlParser.delegate = self;
+    BOOL success = [xmlParser parse];
+    
+    // Return the stack's root dictionary on success
+    if (success)
+    {
+        NSDictionary *resultDict = [self->dictionaryStack objectAtIndex:0];
+        return resultDict;
+    }
+    
+    return nil;
+}
+
 + (NSDictionary *)dictionaryForXMLData:(NSData *)data error:(NSError **)error
 {
     XMLReader *reader = [[XMLReader alloc] initWithError:error];
